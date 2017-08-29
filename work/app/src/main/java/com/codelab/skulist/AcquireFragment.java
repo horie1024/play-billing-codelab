@@ -28,10 +28,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.SkuDetails;
+import com.android.billingclient.api.SkuDetailsResponseListener;
 import com.codelab.GamePlayActivity;
 import com.codelab.sample.R;
 import com.codelab.billing.BillingProvider;
+import com.codelab.skulist.row.SkuRowData;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -99,6 +104,7 @@ public class AcquireFragment extends DialogFragment {
             handleManagerAndUiReady();
         }
     }
+
     /**
      * Enables or disables "please wait" screen.
      */
@@ -111,7 +117,22 @@ public class AcquireFragment extends DialogFragment {
      * Executes query for SKU details at the background thread
      */
     private void handleManagerAndUiReady() {
-        // TODO: If Billing Manager was successfully initialized - start querying for SKUs
+
+        List<String> inAppSkus = mBillingProvider.getBillingManager().getSkus(BillingClient.SkuType.INAPP);
+        mBillingProvider.getBillingManager().querySkuDetailsAsync(BillingClient.SkuType.INAPP, inAppSkus,
+                new SkuDetailsResponseListener() {
+                    @Override
+                    public void onSkuDetailsResponse(SkuDetails.SkuDetailsResult result) {
+                        if (result.getResponseCode() == BillingClient.BillingResponse.OK
+                                && result.getSkuDetailsList() != null) {
+                            List<SkuRowData> inList = new ArrayList<>();
+                            for (SkuDetails details : result.getSkuDetailsList()) {
+                                Log.i(TAG, "Found sku: " + details);
+                            }
+                        }
+                    }
+                });
+
         // and only otherwise display an error
         displayAnErrorIfNeeded();
     }

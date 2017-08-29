@@ -16,7 +16,18 @@
 package com.codelab.billing;
 
 import android.content.Context;
+import android.util.Log;
 
+import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.BillingClient.BillingResponse;
+import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesUpdatedListener;
+import com.android.billingclient.api.SkuDetails;
+import com.android.billingclient.api.SkuDetailsResponseListener;
+
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -24,13 +35,59 @@ import java.util.List;
  * (via Billing library), maintain connection to it through BillingClient and cache
  * temporary states/data if needed.
  */
-public class BillingManager {
+public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
+    private final BillingClient mBillingClient;
 
     public BillingManager(Context context) {
+
+        mBillingClient = new BillingClient.Builder(context).setListener(this).build();
+        mBillingClient.startConnection(new BillingClientStateListener() {
+            @Override
+            public void onBillingSetupFinished(@BillingResponse int resultCode) {
+                if (resultCode == BillingResponse.OK) {
+                    Log.i(TAG, "onBillingSetupFinished() response: " + resultCode);
+                } else {
+                    Log.w(TAG, "onBillingSetupFinished() error code: " + resultCode);
+                }
+            }
+
+            @Override
+            public void onBillingServiceDisconnected() {
+                Log.w(TAG, "onBillingServiceDisconnected()");
+            }
+        });
     }
 
     public void startPurchaseFlow(String skuId, String billingType) {
         // TODO: Implement launch billing flow here
+    }
+
+    @Override
+    public void onPurchasesUpdated(int responseCode, List<Purchase> purchases) {
+        Log.d(TAG, "onPurchasesUpdated() response: " + responseCode);
+    }
+
+    public void querySkuDetailsAsync(@BillingClient.SkuType final String skuType,
+                                      final List<String> skuList, final SkuDetailsResponseListener listener) {
+        mBillingClient.querySkuDetailsAsync(skuType, skuList,
+                new SkuDetailsResponseListener() {
+                    @Override
+                    public void onSkuDetailsResponse(SkuDetails.SkuDetailsResult result) {
+                        listener.onSkuDetailsResponse(result);
+                    }
+                });
+    }
+
+    private static final HashMap<String, List<String>> SKUS;
+
+    static {
+        SKUS = new HashMap<>();
+        SKUS.put(BillingClient.SkuType.INAPP, Arrays.asList("gas", "premium"));
+        SKUS.put(BillingClient.SkuType.SUBS, Arrays.asList("gold_monthly", "gold_yearly"));
+    }
+
+    public List<String> getSkus(@BillingClient.SkuType String type) {
+        return SKUS.get(type);
     }
 }
