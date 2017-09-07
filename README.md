@@ -2,6 +2,8 @@
 
 Sample application sources for Google Play Billing Codelab
 
+https://codelabs.developers.google.com/codelabs/play-billing-codelab/
+
 ## Introduction
 
 This sample is provided to demonstrate a new way of integration with Google Play In-app Billing.

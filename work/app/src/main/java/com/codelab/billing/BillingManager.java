@@ -15,12 +15,14 @@
  */
 package com.codelab.billing;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClient.BillingResponse;
 import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
@@ -38,10 +40,13 @@ import java.util.List;
 public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
     private final BillingClient mBillingClient;
+    private Activity mActivity;
 
-    public BillingManager(Context context) {
+    public BillingManager(Activity activity) {
 
-        mBillingClient = new BillingClient.Builder(context).setListener(this).build();
+        mActivity = activity;
+
+        mBillingClient = new BillingClient.Builder(activity).setListener(this).build();
         mBillingClient.startConnection(new BillingClientStateListener() {
             @Override
             public void onBillingSetupFinished(@BillingResponse int resultCode) {
@@ -60,16 +65,33 @@ public class BillingManager implements PurchasesUpdatedListener {
     }
 
     public void startPurchaseFlow(String skuId, String billingType) {
-        // TODO: Implement launch billing flow here
+        BillingFlowParams billingFlowParams = new BillingFlowParams.Builder()
+                .setType(billingType)
+                .setSku(skuId)
+                .build();
+        mBillingClient.launchBillingFlow(mActivity, billingFlowParams);
     }
 
     @Override
     public void onPurchasesUpdated(int responseCode, List<Purchase> purchases) {
         Log.d(TAG, "onPurchasesUpdated() response: " + responseCode);
+        if (responseCode == BillingResponse.OK
+                && purchases != null) {
+            for (Purchase purchase : purchases) {
+                //handlePurchase(purchase);
+                Log.d(TAG, "onPurchasesUpdated() purchase sku: " + purchase.getSku());
+            }
+        } else if (responseCode == BillingResponse.USER_CANCELED) {
+            // Handle an error caused by a user cancelling the purchase flow.
+            Log.d(TAG, "onPurchasesUpdated() response: " + responseCode + "Handle an error caused by a user cancelling the purchase flow.");
+        } else {
+            // Handle any other error codes.
+            Log.d(TAG, "onPurchasesUpdated() response: " + responseCode + " Handle any other error codes.");
+        }
     }
 
     public void querySkuDetailsAsync(@BillingClient.SkuType final String skuType,
-                                      final List<String> skuList, final SkuDetailsResponseListener listener) {
+                                     final List<String> skuList, final SkuDetailsResponseListener listener) {
         mBillingClient.querySkuDetailsAsync(skuType, skuList,
                 new SkuDetailsResponseListener() {
                     @Override
